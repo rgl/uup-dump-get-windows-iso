@@ -1,0 +1,83 @@
+name: build
+on:
+  push:
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - name: windows-10
+          - name: windows-11
+          - name: windows-2022
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      # log the available disk space, so we can inspect it later.
+      # NB GitHub-hosted runners have limited available disk space.
+      #    see https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
+      - name: Show available disk space before build
+        run: Get-PSDrive -PSProvider FileSystem
+      # NB we are writting outside of the current working/job directory
+      #    because it does not have sufficient available disk space.
+      - name: Build
+        run: pwsh uup-dump-get-windows-iso.ps1 ${{ matrix.name }} c:/output
+      - name: Show available disk space after build
+        run: Get-PSDrive -PSProvider FileSystem
+      - name: Build summary
+        run: |
+          $iso = Get-Content (Resolve-Path c:/output/*.json) | ConvertFrom-Json
+          Add-Content $env:GITHUB_STEP_SUMMARY @"
+          | Property | Value |
+          | :--- | :--- |
+          | Name | $($iso.name) |
+          | Build | $($iso.build) |
+          | Checkum | $($iso.checksum) |
+          $($iso.images | ForEach-Object {"| Image Name #$($_.index) | $($_.name) |"})
+          | UUP dump | [$($iso.title)]($($iso.uupDump.downloadUrl)) |
+          "@
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.name }}
+          path: |
+            c:/output/*.json
+            c:/output/*.iso
+            c:/output/*.iso.sha256.txt
+  # NB this job will not actually produce a useful release, because in a
+  #    github release a single file size cannot be above 2GB and these
+  #    isos are 4GB+.
+  # see https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases#storage-and-bandwidth-quotas
+  # see https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github#distributing-large-binaries
+  # see https://github.com/ncipollo/release-action/issues/110
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    name: Release
+    runs-on: ubuntu-20.04
+    needs:
+      - build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: output
+      - name: Release notes
+        run: |
+          cat >release-notes.md <<EOF
+          This is a useless release, because in a github release a single file
+          size cannot be above 2GB and these iso files are 4GB+.
+
+          See:
+
+            * GitHub: [Storage and bandwidth quotas](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases#storage-and-bandwidth-quotas)
+            * Github: [Distributing large binaries](https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github#distributing-large-binaries)
+            * ncipollo/release-action#110: [Artifacts over 2147483647 bytes do not get uploaded](https://github.com/ncipollo/release-action/issues/110)
+          EOF
+      - name: Release
+        uses: ncipollo/release-action@v1
+        with:
+          bodyFile: release-notes.md
+          artifacts: output/*/*
+          token: ${{ secrets.GITHUB_TOKEN }}
