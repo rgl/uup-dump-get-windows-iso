@@ -1,6 +1,9 @@
 name: build
 on:
   push:
+  schedule:
+    #- cron: '0 * * * *' # hourly.
+    - cron: '0 0 17 * *' # every month, the 17th day.
 jobs:
   build:
     strategy:
