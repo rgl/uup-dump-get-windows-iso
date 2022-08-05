@@ -1,4 +1,5 @@
 #!/usr/bin/pwsh
+#Requires -RunAsAdministrator
 param(
     [string]$windowsTargetName,
     [string]$destinationDirectory = 'output',
