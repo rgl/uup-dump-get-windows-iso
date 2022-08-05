@@ -1,7 +1,9 @@
 #!/usr/bin/pwsh
+#Requires -RunAsAdministrator
 param(
     [string]$windowsTargetName,
-    [string]$destinationDirectory='output'
+    [string]$destinationDirectory = 'output',
+    [String[]]$windowsEditions = @()
 )
 
 Set-StrictMode -Version Latest
@@ -32,6 +34,18 @@ $TARGETS = @{
         search = "feature update server operating system 20348 amd64" # aka 21H2. Mainstream EOL: October 13, 2026.
         editions = @("ServerStandard")
     }
+}
+
+# check if target exists
+if (!$TARGETS.ContainsKey($windowsTargetName)) {
+    Write-Error "ERROR: Invalid target: '$windowsTargetName'."
+}
+
+if ($windowsEditions) {
+    # handle calls from WSL by splitting
+    if ($windowsEditions.Count -eq 1) { [Array]$windowsEditions = $windowsEditions.Split(',') }
+    write-host $windowsEditions
+    $TARGETS[$windowsTargetName].editions = $windowsEditions
 }
 
 function New-QueryString([hashtable]$parameters) {
@@ -146,6 +160,7 @@ function Get-UupDumpIso($name, $target) {
 
 function Get-IsoWindowsImages($isoPath) {
     $isoPath = Resolve-Path $isoPath
+    if ($IsWindows) {
     Write-Host "Mounting $isoPath"
     $isoImage = Mount-DiskImage $isoPath -PassThru
     try {
@@ -159,14 +174,56 @@ function Get-IsoWindowsImages($isoPath) {
                     -Index $_.ImageIndex
                 $imageVersion = $image.Version
                 [PSCustomObject]@{
-                    index = $image.ImageIndex
-                    name = $image.ImageName
+                    index   = $image.ImageIndex
+                    name    = $image.ImageName
                     version = $imageVersion
                 }
             }
-    } finally {
+        }
+        finally {
         Write-Host "Dismounting $isoPath"
         Dismount-DiskImage $isoPath | Out-Null
+        }
+    }
+    elseif ($IsLinux) {
+        # test if we have write access to tmp
+        Try { [io.file]::OpenWrite("/tmp/.winisobuilder").close() }
+        Catch { return [PSCustomObject]@{} }
+        finally { Remove-Item "/tmp/.winisobuilder" -ErrorAction SilentlyContinue }
+    
+        Write-Host "Extracting install.wim from $isoPath to /tmp/winisobuilder/"
+        
+        7z x -y -o/tmp/winisobuilder $isoPath sources/install.wim | Out-Null
+
+        $installPath = "/tmp/winisobuilder/sources/install.wim"
+
+        if (-not (Test-Path $installPath)) {
+            Write-Host "Error extracting install.wim from $isoPath"
+            return [PSCustomObject]@{}
+        }
+        
+        try {
+            Write-Host "Getting Windows images from $installPath"
+            wimlib-imagex info "$installPath" --extract-xml "$installPath.xml"
+
+            if (Test-Path "$installPath.xml") {
+                [xml]$imageInfoXml = Get-Content "$installPath.xml"
+                write-host $imageInfoXml
+                $imageInfoXml.ChildNodes.Image | ForEach-Object {
+                    $imageVersion = $_.Windows.Version | ForEach-Object { "$($_.Major).$($_.Minor).$($_.Build).$($_.Spbuild)" }
+                    [PSCustomObject]@{
+                        index   = $_.Index
+                        name    = $_.Displayname
+                        version = $imageVersion
+                    }
+                }
+            }
+            
+        }
+        finally {
+            Write-Host "Removing $isoPath"
+            Remove-Item -Path /tmp/winisobuilder -Force -Recurse -ErrorAction SilentlyContinue
+        }
     }
 }
 
@@ -214,7 +271,11 @@ function Get-WindowsIso($name, $destinationDirectory) {
 
     Write-Host "Creating the $name iso file"
     Push-Location $buildDirectory
-    cmd /c uup_download_windows.cmd
+    (Get-Content uup_download_windows.cmd -Raw) -Replace 'RunAs 2>NUL', 'RunAs -Wait 2>NUL' | Set-Content uup_download_windows.cmd
+    $process = start-process cmd.exe -ArgumentList "/c uup_download_windows.cmd" -PassThru -Wait
+    if ($process.ExitCode -ne 0) {
+        throw "uup_download_windows.cmd failed"
+    }
     Pop-Location
 
     $sourceIsoPath = Resolve-Path $buildDirectory/*.iso
@@ -256,6 +317,19 @@ function Get-WindowsIso($name, $destinationDirectory) {
         | Select-Object FullName,Size
 
     Write-Host 'All Done.'
+}
+
+if ($IsLinux) {
+    # check if path is symlink
+    if (Test-Path $destinationDirectory -ErrorAction SilentlyContinue) {
+        $destinationDirectory = (Resolve-Path $destinationDirectory).Path
+        $destinationDirectory = readlink $destinationDirectory
+    }
+
+    if (-Not ($destinationDirectory -like '/mnt/*')) {
+        Write-Error "'$destinationDirectory' is not a valid path!`nDue to a limit with CMD.exe, output directory must be in Windows. Please use a Windows path: /mnt/c/..."
+        exit 1
+    }
 }
 
 Get-WindowsIso $windowsTargetName $destinationDirectory
