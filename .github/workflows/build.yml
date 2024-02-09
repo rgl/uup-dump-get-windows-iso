@@ -15,7 +15,7 @@ jobs:
     runs-on: windows-2022
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       # log the available disk space, so we can inspect it later.
       # NB GitHub-hosted runners have limited available disk space.
       #    see https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
@@ -40,7 +40,7 @@ jobs:
           | UUP dump | [$($iso.title)]($($iso.uupDump.downloadUrl)) |
           "@
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}
           path: |
@@ -56,14 +56,14 @@ jobs:
   release:
     if: startsWith(github.ref, 'refs/tags/v')
     name: Release
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs:
       - build
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: output
       - name: Release notes
