@@ -214,7 +214,16 @@ function Get-WindowsIso($name, $destinationDirectory) {
 
     Write-Host "Creating the $name iso file"
     Push-Location $buildDirectory
-    cmd /c uup_download_windows.cmd
+    # NB we have to use powershell cmd to workaround:
+    #       https://github.com/PowerShell/PowerShell/issues/6850
+    #       https://github.com/PowerShell/PowerShell/pull/11057
+    # NB we have to use | Out-String to ensure that this powershell instance
+    #    waits until all the processes that are started by the .cmd are
+    #    finished.
+    powershell cmd /c uup_download_windows.cmd | Out-String -Stream
+    if ($LASTEXITCODE) {
+        throw "failed with exit code $LASTEXITCODE"
+    }
     Pop-Location
 
     $sourceIsoPath = Resolve-Path $buildDirectory/*.iso
