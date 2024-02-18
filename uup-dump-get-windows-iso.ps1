@@ -18,7 +18,7 @@ $TARGETS = @{
     # see https://en.wikipedia.org/wiki/Windows_11
     # see https://en.wikipedia.org/wiki/Windows_11_version_history
     "windows-11" = @{
-        search = "cumulative update windows 11 22000 amd64" # aka 21H2. Enterprise EOL: October 8, 2024.
+        search = "windows 11 22631 amd64" # aka 23H2. Enterprise EOL: November 10, 2026.
         editions = @("Professional")
     }
     # see https://en.wikipedia.org/wiki/Windows_Server_2022
