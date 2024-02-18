@@ -25,6 +25,20 @@ pwsh uup-dump-get-windows-iso.ps1 windows-2022
 
 When everything works correctly, you'll have the iso in the `output` directory at, e.g., `output/windows-2022-20348.643.iso`.
 
+## Vagrant Usage
+
+Install the base [Windows 2022 box](https://github.com/rgl/windows-vagrant).
+
+Review the images that are going to the downloaded in the [provision-isos.ps1 file](provision-isos.ps1).
+
+Start the VM:
+
+```bash
+vagrant up --no-destroy-on-error --no-tty
+```
+
+When everything works correctly, you'll have the iso in the `output` directory at, e.g., `output/windows-2022-20348.643.iso`.
+
 ## Reference
 
 * [UUP dump home](https://uupdump.net)
