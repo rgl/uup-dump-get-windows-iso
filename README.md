@@ -39,6 +39,12 @@ vagrant up --no-destroy-on-error --no-tty
 
 When everything works correctly, you'll have the iso in the `output` directory at, e.g., `output/windows-2022-20348.643.iso`.
 
+## Related Tools
+
+* [Rufus](https://github.com/pbatard/rufus)
+* [Fido](https://github.com/pbatard/Fido)
+* [windows-evaluation-isos-scraper](https://github.com/rgl/windows-evaluation-isos-scraper)
+
 ## Reference
 
 * [UUP dump home](https://uupdump.net)
