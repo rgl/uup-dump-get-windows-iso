@@ -15,12 +15,6 @@ trap {
 }
 
 $TARGETS = @{
-    # see https://en.wikipedia.org/wiki/Windows_10
-    # see https://en.wikipedia.org/wiki/Windows_10_version_history
-    "windows-10" = @{
-        search = "cumulative update windows 10 19042 amd64" # aka 20H2. Enterprise EOL: May 9, 2023.
-        editions = @("Professional")
-    }
     # see https://en.wikipedia.org/wiki/Windows_11
     # see https://en.wikipedia.org/wiki/Windows_11_version_history
     "windows-11" = @{

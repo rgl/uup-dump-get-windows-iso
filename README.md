@@ -8,7 +8,6 @@ This must be executed in a Windows 2022 host.
 
 This supports the following Windows Editions:
 
-* `windows-10`: Windows 10 19042 (aka 20H2) Enterprise
 * `windows-11`: Windows 11 22000 (aka 21H2) Enterprise
 * `windows-2022`: Windows Server 2022 20348 (aka 21H2) Standard
 
