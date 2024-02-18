@@ -1,5 +1,7 @@
 # About
 
+**WARNING the created enterprise edition iso ends up in a non working state so this repo is currently useless. if you known how to fix this, please reach out.**
+
 This creates an iso file with the latest Windows available from the [Unified Update Platform (UUP)](https://docs.microsoft.com/en-us/windows/deployment/update/windows-update-overview).
 
 This shrink wraps the [UUP dump](https://git.uupdump.net/uup-dump) project into a single command.

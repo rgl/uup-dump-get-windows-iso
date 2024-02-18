@@ -19,12 +19,14 @@ $TARGETS = @{
     # see https://en.wikipedia.org/wiki/Windows_11_version_history
     "windows-11" = @{
         search = "windows 11 22631 amd64" # aka 23H2. Enterprise EOL: November 10, 2026.
-        editions = @("Professional")
+        edition = "Professional"
+        virtualEdition = "Enterprise"
     }
     # see https://en.wikipedia.org/wiki/Windows_Server_2022
     "windows-2022" = @{
         search = "feature update server operating system 20348 amd64" # aka 21H2. Mainstream EOL: October 13, 2026.
-        editions = @("ServerStandard")
+        edition = "ServerStandard"
+        virtualEdition = $null
     }
 }
 
@@ -34,19 +36,36 @@ function New-QueryString([hashtable]$parameters) {
     }) -join '&'
 }
 
+function Invoke-UupDumpApi([string]$name, [hashtable]$body) {
+    # see https://git.uupdump.net/uup-dump/json-api
+    # TODO when getting a 503. sleep 5s, and try again.
+    Invoke-RestMethod `
+        -Method Get `
+        -Uri "https://api.uupdump.net/$name.php" `
+        -Body $body
+}
+
 function Get-UupDumpIso($name, $target) {
     Write-Host "Getting the $name metadata"
-    # see https://github.com/uup-dump/json-api
-    $result = Invoke-RestMethod `
-        -Method Get `
-        -Uri 'https://api.uupdump.net/listid.php' `
-        -Body @{
-            search = $target.search
-        }
+    $result = Invoke-UupDumpApi listid @{
+        search = $target.search
+    }
     $result.response.builds.PSObject.Properties `
+        | ForEach-Object {
+            $id = $_.Value.uuid
+            $uupDumpUrl = 'https://uupdump.net/selectlang.php?' + (New-QueryString @{
+                id = $id
+            })
+            Write-Host "Processing $name $id ($uupDumpUrl)"
+            $_
+        } `
         | Where-Object {
             # ignore previews when they are not explicitly requested.
-            $target.search -like '*preview*' -or $_.Value.title -notlike '*preview*'
+            $result = $target.search -like '*preview*' -or $_.Value.title -notlike '*preview*'
+            if (!$result) {
+                Write-Host "Skipping. Expected preview=false. Got preview=true."
+            }
+            $result
         } `
         | ForEach-Object {
             # get more information about the build. eg:
@@ -68,12 +87,9 @@ function Get-UupDumpIso($name, $target) {
             #   }
             $id = $_.Value.uuid
             Write-Host "Getting the $name $id langs metadata"
-            $result = Invoke-RestMethod `
-                -Method Get `
-                -Uri 'https://api.uupdump.net/listlangs.php' `
-                -Body @{
-                    id = $id
-                }
+            $result = Invoke-UupDumpApi listlangs @{
+                id = $id
+            }
             if ($result.response.updateInfo.build -ne $_.Value.build) {
                 throw 'for some reason listlangs returned an unexpected build'
             }
@@ -81,17 +97,16 @@ function Get-UupDumpIso($name, $target) {
                 langs = $result.response.langFancyNames
                 info = $result.response.updateInfo
             }
-            $editions = if ($_.Value.langs.PSObject.Properties.Name -eq 'en-us') {
+            $langs = $_.Value.langs.PSObject.Properties.Name
+            $editions = if ($langs -contains 'en-us') {
                 Write-Host "Getting the $name $id editions metadata"
-                $result = Invoke-RestMethod `
-                    -Method Get `
-                    -Uri 'https://api.uupdump.net/listeditions.php' `
-                    -Body @{
-                        id = $id
-                        lang = 'en-us'
-                    }
+                $result = Invoke-UupDumpApi listeditions @{
+                    id = $id
+                    lang = 'en-us'
+                }
                 $result.response.editionFancyNames
             } else {
+                Write-Host "Skipping. Expected langs=en-us. Got langs=$($langs -join ',')."
                 [PSCustomObject]@{}
             }
             $_.Value | Add-Member -NotePropertyMembers @{
@@ -103,10 +118,24 @@ function Get-UupDumpIso($name, $target) {
             # only return builds that:
             #   1. are from the retail channel
             #   2. have the english language
-            #   3. match all the requested editions
-            $_.Value.info.ring -eq 'RETAIL' `
-                -and $_.Value.langs.PSObject.Properties.Name -eq 'en-us' `
-                -and (Compare-object -ExcludeDifferent $target.editions $_.Value.editions.PSObject.Properties.Name).Length -eq $target.editions.Length
+            #   3. match the requested edition
+            $ring = $_.Value.info.ring
+            $langs = $_.Value.langs.PSObject.Properties.Name
+            $editions = $_.Value.editions.PSObject.Properties.Name
+            $result = $true
+            if ($ring -ne 'RETAIL') {
+                Write-Host "Skipping. Expected ring=RETAIL. Got ring=$ring."
+                $result = $false
+            }
+            if ($langs -notcontains 'en-us') {
+                Write-Host "Skipping. Expected langs=en-us. Got langs=$($langs -join ',')."
+                $result = $false
+            }
+            if ($editions -notcontains $target.edition) {
+                Write-Host "Skipping. Expected editions=$($target.edition). Got editions=$($editions -join ',')."
+                $result = $false
+            }
+            $result
         } `
         | Select-Object -First 1 `
         | ForEach-Object {
@@ -116,23 +145,28 @@ function Get-UupDumpIso($name, $target) {
                 title = $_.Value.title
                 build = $_.Value.build
                 id = $id
+                edition = $target.edition
+                virtualEdition = $target.virtualEdition
                 apiUrl = 'https://api.uupdump.net/get.php?' + (New-QueryString @{
                     id = $id
                     lang = 'en-us'
-                    edition = $target.editions -join ';'
+                    edition = $target.edition
                     #noLinks = '1' # do not return the files download urls.
                 })
                 downloadUrl = 'https://uupdump.net/download.php?' + (New-QueryString @{
                     id = $id
                     pack = 'en-us'
-                    edition = $target.editions -join ';'
+                    edition = $target.edition
                 })
                 # NB you must use the HTTP POST method to invoke this packageUrl
-                #    AND in the body you must include autodl=2 updates=1 cleanup=1.
+                #    AND in the body you must include:
+                #           autodl=2 updates=1 cleanup=1
+                #           OR
+                #           autodl=3 updates=1 cleanup=1 virtualEditions[]=Enterprise
                 downloadPackageUrl = 'https://uupdump.net/get.php?' + (New-QueryString @{
                     id = $id
                     pack = 'en-us'
-                    edition = $target.editions -join ';'
+                    edition = $target.edition
                 })
             }
         }
@@ -183,16 +217,33 @@ function Get-WindowsIso($name, $destinationDirectory) {
     }
     New-Item -ItemType Directory -Force $buildDirectory | Out-Null
 
-    Write-Host "Downloading the UUP dump download package"
-    Invoke-WebRequest `
-        -Method Post `
-        -Uri $iso.downloadPackageUrl `
-        -Body @{
+    # define the iso title.
+    $edition = if ($iso.virtualEdition) {
+        $iso.virtualEdition
+    } else {
+        $iso.edition
+    }
+    $title = "$name $edition $($iso.build)"
+
+    Write-Host "Downloading the UUP dump download package for $title from $($iso.downloadPackageUrl)"
+    $downloadPackageBody = if ($iso.virtualEdition) {
+        @{
+            autodl = 3
+            updates = 1
+            cleanup = 1
+            'virtualEditions[]' = $iso.virtualEdition
+        }
+    } else {
+        @{
             autodl = 2
             updates = 1
             cleanup = 1
-            #'virtualEditions[0]' = 'Enterprise' # TODO this seems to be the default, so maybe we do not really need it.
-        } `
+        }
+    }
+    Invoke-WebRequest `
+        -Method Post `
+        -Uri $iso.downloadPackageUrl `
+        -Body $downloadPackageBody `
         -OutFile "$buildDirectory.zip" `
         | Out-Null
     Expand-Archive "$buildDirectory.zip" $buildDirectory
@@ -206,7 +257,7 @@ function Get-WindowsIso($name, $destinationDirectory) {
                 -replace '^(SkipWinRE\s*)=.*','$1=1'
         )
 
-    Write-Host "Creating the $name iso file"
+    Write-Host "Creating the $title iso file"
     Push-Location $buildDirectory
     # NB we have to use powershell cmd to workaround:
     #       https://github.com/PowerShell/PowerShell/issues/6850
