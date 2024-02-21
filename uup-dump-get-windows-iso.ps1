@@ -206,9 +206,9 @@ function Get-WindowsIso($name, $destinationDirectory) {
         throw "unexpected $name build: $($iso.build)"
     }
 
-    $buildDirectory = "$destinationDirectory/$name-$($iso.build)"
-    $destinationBuildMetadataPath = "$buildDirectory.json"
+    $buildDirectory = "$destinationDirectory/$name"
     $destinationIsoPath = "$buildDirectory.iso"
+    $destinationIsoMetadataPath = "$destinationIsoPath.json"
     $destinationIsoChecksumPath = "$destinationIsoPath.sha256.txt"
 
     # create the build directory.
@@ -257,7 +257,7 @@ function Get-WindowsIso($name, $destinationDirectory) {
                 -replace '^(SkipWinRE\s*)=.*','$1=1'
         )
 
-    Write-Host "Creating the $title iso file"
+    Write-Host "Creating the $title iso file inside the $buildDirectory directory"
     Push-Location $buildDirectory
     # NB we have to use powershell cmd to workaround:
     #       https://github.com/PowerShell/PowerShell/issues/6850
@@ -267,7 +267,7 @@ function Get-WindowsIso($name, $destinationDirectory) {
     #    finished.
     powershell cmd /c uup_download_windows.cmd | Out-String -Stream
     if ($LASTEXITCODE) {
-        throw "failed with exit code $LASTEXITCODE"
+        throw "uup_download_windows.cmd failed with exit code $LASTEXITCODE"
     }
     Pop-Location
 
@@ -283,7 +283,7 @@ function Get-WindowsIso($name, $destinationDirectory) {
 
     # create the iso metadata file.
     Set-Content `
-        -Path $destinationBuildMetadataPath `
+        -Path $destinationIsoMetadataPath `
         -Value (
             [PSCustomObject]@{
                 name = $name
@@ -301,13 +301,7 @@ function Get-WindowsIso($name, $destinationDirectory) {
         )
 
     Write-Host "Moving the created $sourceIsoPath to $destinationIsoPath"
-    Move-Item $sourceIsoPath $destinationIsoPath
-
-    Write-Host 'Destination directory contents:'
-    Get-ChildItem $destinationDirectory `
-        | Where-Object { -not $_.PsIsContainer } `
-        | Sort-Object FullName `
-        | Select-Object FullName,Size
+    Move-Item -Force $sourceIsoPath $destinationIsoPath
 
     Write-Host 'All Done.'
 }
