@@ -1,12 +1,6 @@
-Set-StrictMode -Version Latest
-$ProgressPreference = 'SilentlyContinue'
-$ErrorActionPreference = 'Stop'
-trap {
-    Write-Host "ERROR: $_"
-    ($_.ScriptStackTrace -split '\r?\n') -replace '^(.*)$','ERROR: $1' | Write-Host
-    ($_.Exception.ToString() -split '\r?\n') -replace '^(.*)$','ERROR EXCEPTION: $1' | Write-Host
-    Exit 1
-}
+param(
+    [string]$name
+)
 
 # NB the built directory should be a local disk; because, when using a
 #    smb network share (e.g. the vagrant synced directory at c:\vagrant),
@@ -15,14 +9,11 @@ trap {
 #       Missing operand.
 Push-Location C:\tmp
 
-@(
-    'windows-11'
-    'windows-2022'
-) | ForEach-Object {
-    pwsh uup-dump-get-windows-iso.ps1 $_
-    if ($LASTEXITCODE) {
-        throw "failed with exit code $LASTEXITCODE"
-    }
+# download and create the iso.
+Write-Host "Creating the $name iso"
+powershell c:\vagrant\uup-dump-get-windows-iso.ps1 $name
+if ($LASTEXITCODE) {
+    throw "failed with exit code $LASTEXITCODE"
 }
 
 # copy the resulting files to the host.
