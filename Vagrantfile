@@ -42,5 +42,7 @@ Vagrant.configure('2') do |config|
       smb_username: ENV['VAGRANT_SMB_USERNAME'] || ENV['USER'],
       smb_password: ENV['VAGRANT_SMB_PASSWORD']
     config.vm.provision :shell, path: 'provision/ps.ps1', args: 'expand-os-partition.ps1'
+    config.vm.provision :shell, path: 'provision/ps.ps1', args: 'provision-chocolatey.ps1'
+    config.vm.provision :shell, path: 'provision/ps.ps1', args: 'provision-base.ps1'
   end
 end
