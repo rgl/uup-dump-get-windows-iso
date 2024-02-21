@@ -21,21 +21,29 @@ Get the latest Windows Server 2022 iso:
 powershell uup-dump-get-windows-iso.ps1 windows-2022
 ```
 
-When everything works correctly, you'll have the iso in the `output` directory at, e.g., `output/windows-2022-20348.643.iso`.
+When everything works correctly, you'll have the iso in the `output` directory at, e.g., `output/windows-2022.iso`.
 
 ## Vagrant Usage
 
 Install the base [Windows 2022 box](https://github.com/rgl/windows-vagrant).
 
-Review the images that are going to the downloaded in the [provision-isos.ps1 file](provision-isos.ps1).
+Review the Windows ISO files that are going to the created in the [Vagrantfile file](Vagrantfile).
 
-Start the VM:
+Create the Windows ISO files using a vagrant managed VM:
 
 ```bash
-vagrant up --no-destroy-on-error --no-tty
+./build.sh create-vm
+./build.sh create-iso windows-2022
+./build.sh create-iso windows-11
+./build.sh destroy-vm
 ```
 
-When everything works correctly, you'll have the iso in the `output` directory at, e.g., `output/windows-2022-20348.643.iso`.
+When everything works correctly, you'll have the following files in the `output`
+directory, e.g., for the `windows-2022` ISO:
+
+* `windows-2022.iso`: the ISO file.
+* `windows-2022.iso.json`: the ISO metadata.
+* `windows-2022.iso.sha256.txt`: the ISO file SHA256 checksum.
 
 ## Related Tools
 

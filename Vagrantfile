@@ -42,7 +42,5 @@ Vagrant.configure('2') do |config|
       smb_username: ENV['VAGRANT_SMB_USERNAME'] || ENV['USER'],
       smb_password: ENV['VAGRANT_SMB_PASSWORD']
     config.vm.provision :shell, path: 'provision/ps.ps1', args: 'expand-os-partition.ps1'
-    config.vm.provision :shell, path: 'provision/ps.ps1', args: ['provision-iso.ps1', 'windows-2022']
-    config.vm.provision :shell, path: 'provision/ps.ps1', args: ['provision-iso.ps1', 'windows-11']
   end
 end
