@@ -1,7 +1,5 @@
 # About
 
-**WARNING the created enterprise edition iso ends up in a non working state so this repo is currently useless. if you known how to fix this, please reach out.**
-
 This creates an iso file with the latest Windows available from the [Unified Update Platform (UUP)](https://docs.microsoft.com/en-us/windows/deployment/update/windows-update-overview).
 
 This shrink wraps the [UUP dump](https://git.uupdump.net/uup-dump) project into a single command.
@@ -20,7 +18,7 @@ This supports the following Windows Editions:
 Get the latest Windows Server 2022 iso:
 
 ```bash
-pwsh uup-dump-get-windows-iso.ps1 windows-2022
+powershell uup-dump-get-windows-iso.ps1 windows-2022
 ```
 
 When everything works correctly, you'll have the iso in the `output` directory at, e.g., `output/windows-2022-20348.643.iso`.
