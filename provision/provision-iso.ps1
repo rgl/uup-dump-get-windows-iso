@@ -10,6 +10,9 @@ param(
 Push-Location C:\tmp
 
 # download and create the iso.
+# NB unfortunately, somehow, the uup-dump batch scripts emits messages to
+#    stdout/stderr outside of this file redirection. so we must also
+#    capture the output from the host (the one calling vagrant up).
 Write-Host "Creating the $name iso"
 powershell c:\vagrant\uup-dump-get-windows-iso.ps1 $name
 if ($LASTEXITCODE) {

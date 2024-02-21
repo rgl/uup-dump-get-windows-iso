@@ -44,6 +44,29 @@ directory, e.g., for the `windows-2022` ISO:
 * `windows-2022.iso`: the ISO file.
 * `windows-2022.iso.json`: the ISO metadata.
 * `windows-2022.iso.sha256.txt`: the ISO file SHA256 checksum.
+* `windows-2022.iso.log`: the ISO creation log.
+
+The ISO metadata is a JSON document alike:
+
+```json
+{
+    "name": "windows-2022",
+    "title": "Feature update to Microsoft server operating system, version 21H2 (20348.2322)",
+    "build": "20348.2322",
+    "checksum": "52405ea3001b16181ffe3d6de9627db111efea572de082d295dcffe07647f279",
+    "images": {
+        "index": 1,
+        "name": "Windows Server 2022 Standard (Desktop Experience)",
+        "version": "10.0.20348.2322"
+    },
+    "uupDump": {
+        "downloadPackageUrl": "https://uupdump.net/get.php?edition=ServerStandard&pack=en-us&id=854d29b2-edbc-4959-a3e2-8a61f0900a7c",
+        "id": "854d29b2-edbc-4959-a3e2-8a61f0900a7c",
+        "downloadUrl": "https://uupdump.net/download.php?edition=ServerStandard&pack=en-us&id=854d29b2-edbc-4959-a3e2-8a61f0900a7c",
+        "apiUrl": "https://api.uupdump.net/get.php?lang=en-us&edition=ServerStandard&id=854d29b2-edbc-4959-a3e2-8a61f0900a7c"
+    }
+}
+```
 
 ## Related Tools
 
