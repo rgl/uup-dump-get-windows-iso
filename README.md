@@ -53,12 +53,14 @@ The ISO metadata is a JSON document alike:
     "name": "windows-2022",
     "title": "Feature update to Microsoft server operating system, version 21H2 (20348.2322)",
     "build": "20348.2322",
-    "checksum": "52405ea3001b16181ffe3d6de9627db111efea572de082d295dcffe07647f279",
-    "images": {
-        "index": 1,
-        "name": "Windows Server 2022 Standard (Desktop Experience)",
-        "version": "10.0.20348.2322"
-    },
+    "checksum": "468f8ecdf2272e71c4dc0094d6379b60e5321bef15a01333dbf9508ae4d53a68",
+    "images": [
+        {
+            "index": 1,
+            "name": "Windows Server 2022 Standard (Desktop Experience)",
+            "version": "10.0.20348.2322"
+        }
+    ],
     "uupDump": {
         "downloadPackageUrl": "https://uupdump.net/get.php?edition=ServerStandard&pack=en-us&id=854d29b2-edbc-4959-a3e2-8a61f0900a7c",
         "id": "854d29b2-edbc-4959-a3e2-8a61f0900a7c",

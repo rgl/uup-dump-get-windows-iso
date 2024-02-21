@@ -290,7 +290,7 @@ function Get-WindowsIso($name, $destinationDirectory) {
                 title = $iso.title
                 build = $iso.build
                 checksum = $isoChecksum
-                images = $windowsImages
+                images = @($windowsImages)
                 uupDump = @{
                     id = $iso.id
                     apiUrl = $iso.apiUrl
