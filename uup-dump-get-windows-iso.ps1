@@ -38,11 +38,22 @@ function New-QueryString([hashtable]$parameters) {
 
 function Invoke-UupDumpApi([string]$name, [hashtable]$body) {
     # see https://git.uupdump.net/uup-dump/json-api
-    # TODO when getting a 503. sleep 5s, and try again.
-    Invoke-RestMethod `
-        -Method Get `
-        -Uri "https://api.uupdump.net/$name.php" `
-        -Body $body
+    for ($n = 0; $n -lt 15; ++$n) {
+        if ($n) {
+            Write-Host "Waiting a bit before retrying the uup-dump api ${name} request #$n"
+            Start-Sleep -Seconds 10
+            Write-Host "Retrying the uup-dump api ${name} request #$n"
+        }
+        try {
+            return Invoke-RestMethod `
+                -Method Get `
+                -Uri "https://api.uupdump.net/$name.php" `
+                -Body $body
+        } catch {
+            Write-Host "WARN: failed the uup-dump api $name request: $_"
+        }
+    }
+    throw "timeout making the uup-dump api $name request"
 }
 
 function Get-UupDumpIso($name, $target) {
