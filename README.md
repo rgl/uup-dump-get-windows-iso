@@ -27,8 +27,6 @@ When everything works correctly, you'll have the iso in the `output` directory a
 
 Install the base [Windows 2022 box](https://github.com/rgl/windows-vagrant).
 
-Review the Windows ISO files that are going to the created in the [Vagrantfile file](Vagrantfile).
-
 Create the Windows ISO files using a vagrant managed VM:
 
 ```bash
