@@ -285,7 +285,7 @@ function Get-WindowsIso($name, $destinationDirectory) {
     Set-Content `
         -Path $destinationIsoMetadataPath `
         -Value (
-            [PSCustomObject]@{
+            ([PSCustomObject]@{
                 name = $name
                 title = $iso.title
                 build = $iso.build
@@ -297,7 +297,7 @@ function Get-WindowsIso($name, $destinationDirectory) {
                     downloadUrl = $iso.downloadUrl
                     downloadPackageUrl = $iso.downloadPackageUrl
                 }
-            } | ConvertTo-Json -Depth 99
+            } | ConvertTo-Json -Depth 99) -replace '\\u0026','&'
         )
 
     Write-Host "Moving the created $sourceIsoPath to $destinationIsoPath"
