@@ -258,15 +258,24 @@ function Get-WindowsIso($name, $destinationDirectory) {
         -OutFile "$buildDirectory.zip" `
         | Out-Null
     Expand-Archive "$buildDirectory.zip" $buildDirectory
+
+    # patch the uup-converter configuration.
+    # see the ConvertConfig $buildDirectory/ReadMe.html documentation.
+    # see https://github.com/abbodi1406/BatUtil/tree/master/uup-converter-wimlib
+    $convertConfig = (Get-Content $buildDirectory/ConvertConfig.ini) `
+        -replace '^(AutoExit\s*)=.*','$1=1' `
+        -replace '^(ResetBase\s*)=.*','$1=1' `
+        -replace '^(SkipWinRE\s*)=.*','$1=1'
+    if ($iso.virtualEdition) {
+        $convertConfig = $convertConfig `
+            -replace '^(StartVirtual\s*)=.*','$1=1' `
+            -replace '^(vDeleteSource\s*)=.*','$1=1' `
+            -replace '^(vAutoEditions\s*)=.*',"`$1=$($iso.virtualEdition)"
+    }
     Set-Content `
         -Encoding ascii `
         -Path $buildDirectory/ConvertConfig.ini `
-        -Value (
-            (Get-Content $buildDirectory/ConvertConfig.ini) `
-                -replace '^(AutoExit\s*)=.*','$1=1' `
-                -replace '^(ResetBase\s*)=.*','$1=1' `
-                -replace '^(SkipWinRE\s*)=.*','$1=1'
-        )
+        -Value $convertConfig
 
     Write-Host "Creating the $title iso file inside the $buildDirectory directory"
     Push-Location $buildDirectory
