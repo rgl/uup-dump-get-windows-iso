@@ -127,15 +127,20 @@ function Get-UupDumpIso($name, $target) {
         } `
         | Where-Object {
             # only return builds that:
-            #   1. are from the retail channel
+            #   1. are from the expected ring/channel (default retail)
             #   2. have the english language
             #   3. match the requested edition
             $ring = $_.Value.info.ring
             $langs = $_.Value.langs.PSObject.Properties.Name
             $editions = $_.Value.editions.PSObject.Properties.Name
             $result = $true
-            if ($ring -ne 'RETAIL') {
-                Write-Host "Skipping. Expected ring=RETAIL. Got ring=$ring."
+            $expectedRing = if ($target.ring) {
+                $target.ring
+            } else {
+                'RETAIL'
+            }
+            if ($ring -ne $expectedRing) {
+                Write-Host "Skipping. Expected ring=$expectedRing. Got ring=$ring."
                 $result = $false
             }
             if ($langs -notcontains 'en-us') {
