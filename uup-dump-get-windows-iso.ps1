@@ -134,7 +134,7 @@ function Get-UupDumpIso($name, $target) {
             $langs = $_.Value.langs.PSObject.Properties.Name
             $editions = $_.Value.editions.PSObject.Properties.Name
             $result = $true
-            $expectedRing = if ($target.ring) {
+            $expectedRing = if ($target.PSObject.Properties.Name -contains 'ring') {
                 $target.ring
             } else {
                 'RETAIL'
